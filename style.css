@@ -40,6 +40,8 @@ html {
   padding: 2.5rem;
   width: 90%;
   max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
   color: #1c1917;
   /* 暗いウォーム系テキスト */
   text-align: center;
@@ -47,6 +49,24 @@ html {
   pointer-events: auto;
   /* UIパネルは操作可能にする */
   transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+/* グラスパネル専用の極細スクロールバー */
+.glass-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.glass-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.glass-panel::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 3px;
+}
+
+.glass-panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.24);
 }
 
 .glass-panel h1,
@@ -260,4 +280,44 @@ html {
   display: none !important;
   opacity: 0;
   pointer-events: none;
+}
+
+/* モバイル横向き（高さ制限）対応の圧縮レイアウト */
+@media (max-height: 520px) {
+  .glass-panel {
+    padding: 1.2rem !important;
+    border-radius: 16px !important;
+  }
+
+  .glass-panel h1,
+  .glass-panel h2 {
+    font-size: 1.4rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .glass-panel p {
+    font-size: 0.82rem !important;
+    margin-bottom: 0.8rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .instructions {
+    padding: 0.8rem !important;
+    margin-bottom: 0.8rem !important;
+  }
+
+  .instructions h3 {
+    font-size: 0.82rem !important;
+    margin-bottom: 0.4rem !important;
+  }
+
+  .instructions li {
+    margin-bottom: 0.3rem !important;
+    font-size: 0.78rem !important;
+  }
+
+  .glow-button {
+    padding: 0.5rem 1.4rem !important;
+    font-size: 0.82rem !important;
+  }
 }

@@ -44,6 +44,19 @@
       <div id="instruction-hint"></div>
     </div>
 
+    <!-- モバイル用移動ボタン (スマホのみJSで表示をオンにする) -->
+    <div id="mobile-movement-ctrl" class="glass-panel hidden"
+      style="position: absolute; bottom: 20px; left: 20px; z-index: 15; display: flex; gap: 12px; pointer-events: auto;">
+      <button id="move-forward-btn"
+        style="width: 58px; height: 58px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.7); background: rgba(255, 255, 255, 0.85); color: #1c1917; font-weight: 800; font-size: 0.75rem; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.06); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 1px; -webkit-user-select: none; user-select: none;">
+        <span style="font-size: 0.95rem;">▲</span>近づく
+      </button>
+      <button id="move-backward-btn"
+        style="width: 58px; height: 58px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.7); background: rgba(255, 255, 255, 0.85); color: #1c1917; font-weight: 800; font-size: 0.75rem; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.06); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 1px; -webkit-user-select: none; user-select: none;">
+        <span style="font-size: 0.95rem;">▼</span>離れる
+      </button>
+    </div>
+
     <!-- PC用消火器装備2D HUD (初期は非表示, スタイリッシュなライトグラス表示) -->
     <div id="pc-ext-hud" class="glass-panel hidden"
       style="position: absolute; bottom: 20px; right: 20px; width: 170px; padding: 1.2rem; z-index: 15; text-align: left; border-radius: 16px; border: 1px solid rgba(255,255,255,0.6); background: rgba(255,255,255,0.85); box-shadow: 0 10px 25px rgba(0,0,0,0.05);">

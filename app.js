@@ -352,6 +352,7 @@ AFRAME.registerComponent('extinguisher-component', {
     this.maxSprayParticles = 150;
     this.sprayTimeLeft = 60.0; // 60秒の放射時間
     this.usedAgent = 0.0;      // 実際に放射した秒数
+    this.rig = document.querySelector('#rig'); // スマホ移動用のリグキャッシュ
 
     // 消火器の噴射口 (装備用消火器のノズル先端。VR時用にVRモデル、PC時用にカメラを参照するキャッシュを用意)
     this.camera = document.querySelector('#camera');
@@ -497,6 +498,31 @@ AFRAME.registerComponent('extinguisher-component', {
 
   tick: function (time, timeDelta) {
     const dt = timeDelta / 1000;
+
+    // スマホ前進・後退のパラレル物理水平移動処理
+    if (app && (app.isMovingForward || app.isMovingBackward)) {
+      const rig = this.rig || document.querySelector('#rig');
+      const camera = this.camera || document.querySelector('#camera');
+      if (rig && camera) {
+        const camDir = new THREE.Vector3();
+        camera.object3D.getWorldDirection(camDir);
+        camDir.negate(); // 視線前方
+        camDir.y = 0;    // 水平方向
+        camDir.normalize();
+
+        const moveSpeed = 2.0 * dt; // 秒速 2m
+        const rigPos = rig.getAttribute('position');
+        if (app.isMovingForward) {
+          rigPos.x += camDir.x * moveSpeed;
+          rigPos.z += camDir.z * moveSpeed;
+        }
+        if (app.isMovingBackward) {
+          rigPos.x -= camDir.x * moveSpeed;
+          rigPos.z -= camDir.z * moveSpeed;
+        }
+        rig.setAttribute('position', rigPos);
+      }
+    }
 
     if (this.isSpraying) {
       // 放射時間を減らし、実際に使用した秒数を増やす
@@ -689,6 +715,10 @@ class FireSimulationApp {
     this.isExtinguishing = false;
     this.usedAgent = 0; // 消火剤の使用量パラメータ
 
+    // スマホでの水平接近・後退フラグ
+    this.isMovingForward = false;
+    this.isMovingBackward = false;
+
     this.dom = {
       startScreen: document.getElementById('start-screen'),
       hud: document.getElementById('hud'),
@@ -704,7 +734,10 @@ class FireSimulationApp {
       failReason: document.getElementById('fail-reason'),
       retryBtn: document.getElementById('retry-btn'),
       clearRank: document.getElementById('clear-rank'),
-      hudSprayBtn: document.getElementById('hud-spray-btn')
+      hudSprayBtn: document.getElementById('hud-spray-btn'),
+      mobileMovementCtrl: document.getElementById('mobile-movement-ctrl'),
+      moveForwardBtn: document.getElementById('move-forward-btn'),
+      moveBackwardBtn: document.getElementById('move-backward-btn')
     };
 
     this.bindEvents();
@@ -717,6 +750,29 @@ class FireSimulationApp {
     // 失敗（ゲームオーバー）画面でのリトライ
     if (this.dom.retryBtn) {
       this.dom.retryBtn.addEventListener('click', () => this.resetSimulation());
+    }
+
+    // スマホ前進・後退用のタッチ・マウスイベント登録 (押し下げ中フラグON)
+    const startForward = (e) => { this.isMovingForward = true; e.preventDefault(); };
+    const stopForward = (e) => { this.isMovingForward = false; e.preventDefault(); };
+    const startBackward = (e) => { this.isMovingBackward = true; e.preventDefault(); };
+    const stopBackward = (e) => { this.isMovingBackward = false; e.preventDefault(); };
+
+    if (this.dom.moveForwardBtn) {
+      this.dom.moveForwardBtn.addEventListener('mousedown', startForward);
+      this.dom.moveForwardBtn.addEventListener('touchstart', startForward, { passive: false });
+      this.dom.moveForwardBtn.addEventListener('mouseup', stopForward);
+      this.dom.moveForwardBtn.addEventListener('touchend', stopForward, { passive: false });
+      this.dom.moveForwardBtn.addEventListener('mouseleave', stopForward);
+      this.dom.moveForwardBtn.addEventListener('touchcancel', stopForward, { passive: false });
+    }
+    if (this.dom.moveBackwardBtn) {
+      this.dom.moveBackwardBtn.addEventListener('mousedown', startBackward);
+      this.dom.moveBackwardBtn.addEventListener('touchstart', startBackward, { passive: false });
+      this.dom.moveBackwardBtn.addEventListener('mouseup', stopBackward);
+      this.dom.moveBackwardBtn.addEventListener('touchend', stopBackward, { passive: false });
+      this.dom.moveBackwardBtn.addEventListener('mouseleave', stopBackward);
+      this.dom.moveBackwardBtn.addEventListener('touchcancel', stopBackward, { passive: false });
     }
 
     // HUDの「レバーを引く(噴射)」ボタンのクリックイベント (スマホ・PCマウス兼用)
@@ -750,6 +806,11 @@ class FireSimulationApp {
       this.dom.hudSprayBtn.disabled = false;
       this.dom.hudSprayBtn.innerText = '💨 レバーを引く (噴射)';
       this.dom.hudSprayBtn.style.background = '#dc2626';
+    }
+
+    // スマホであればタッチ移動コントロールを表示する
+    if (AFRAME.utils.device.isMobile() && this.dom.mobileMovementCtrl) {
+      this.dom.mobileMovementCtrl.classList.remove('hidden');
     }
 
     this.state = 'STARTING';
@@ -1097,6 +1158,8 @@ class FireSimulationApp {
     this.fireIntensity = 0.0;
     this.usedAgent = 0;
     this.isExtinguishing = false;
+    this.isMovingForward = false;
+    this.isMovingBackward = false;
 
     if (this.fireGrowInterval) {
       clearInterval(this.fireGrowInterval);
@@ -1120,6 +1183,13 @@ class FireSimulationApp {
       extinguisherEl.setAttribute('position', '0.6 0.1 -1.4');
       extinguisherEl.setAttribute('rotation', '0 -35 0');
       extinguisherEl.setAttribute('scale', '1 1 1');
+    }
+
+    // リグの位置リセット (PC/スマホ共通で初期位置へ)
+    const rig = document.querySelector('#rig');
+    if (rig) {
+      rig.setAttribute('position', '0 0 2');
+      rig.setAttribute('rotation', '0 0 0');
     }
 
     // タオルの色と位置を元に戻す
@@ -1147,6 +1217,10 @@ class FireSimulationApp {
     this.dom.startScreen.classList.remove('hidden');
     this.dom.hud.classList.add('hidden');
     this.dom.hud.classList.remove('fire-alarm');
+
+    if (this.dom.mobileMovementCtrl) {
+      this.dom.mobileMovementCtrl.classList.add('hidden');
+    }
   }
 }
 

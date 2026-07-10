@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VR火災・消火シミュレーター</title>
+  <!-- A-Frame 1.4.2 (安定板) -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- Web UI Overlay -->
+  <div id="ui-container">
+    <div id="start-screen" class="glass-panel">
+      <h1>VR火災・消火体験</h1>
+      <p>部屋の中で、熱くなった電気ストーブに洗濯物のタオルが落下して出火します。それを消火器で消し止めるシミュレーションアプリです。</p>
+
+      <div class="instructions">
+        <h3>体験の流れ</h3>
+        <ol style="margin-left: 1.2rem; font-size: 0.85rem; color: #44403c; line-height: 1.5; margin-bottom: 1rem;">
+          <li style="margin-bottom: 0.4rem;"><strong>1. 自動装備:</strong> 「開始」と同時に、消火器は自動的に手元（2D HUD）に装備されます。</li>
+          <li style="margin-bottom: 0.4rem;"><strong>2. 視線合わせ:</strong> マウスドラッグで画面を回し、中央の白い丸（照準）をストーブの火元に合わせます。</li>
+          <li style="margin-bottom: 0.4rem;"><strong>3. 消火実行:</strong> <strong>【スペースキー】を押し続ける</strong>と、消火剤が前方へ噴出します。
+          </li>
+        </ol>
+
+        <h3>操作方法</h3>
+        <ul>
+          <li><strong>PCカメラ回転 (狙う):</strong> マウスドラッグ</li>
+          <li><strong>PC消火剤噴射:</strong> <strong>【スペースキー】を長押し</strong></li>
+          <li><strong>VR操作:</strong> コントローラーを向けてトリガーを押し続ける</li>
+        </ul>
+      </div>
+
+      <button id="start-btn" class="glow-button">シミュレーション開始</button>
+    </div>
+
+    <!-- 状況通知 UI -->
+    <div id="hud" class="hidden">
+      <div id="status-message">状況を監視中...</div>
+      <div id="instruction-hint"></div>
+    </div>
+
+    <!-- PC用消火器装備2D HUD (初期は非表示, スタイリッシュなライトグラス表示) -->
+    <div id="pc-ext-hud" class="glass-panel hidden"
+      style="position: absolute; bottom: 20px; right: 20px; width: 170px; padding: 1.2rem; z-index: 15; text-align: left; border-radius: 16px; border: 1px solid rgba(255,255,255,0.6); background: rgba(255,255,255,0.85); box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
+      <div
+        style="font-weight: 800; font-size: 0.9rem; margin-bottom: 0.5rem; display: flex; align-items: center; color: #1c1917;">
+        <span
+          style="display:inline-block; width:12px; height:12px; background:#d32f2f; border-radius:50%; margin-right:8px;"></span>
+        消火器装備中
+      </div>
+      <button id="hud-spray-btn"
+        style="width: 100%; padding: 0.7rem; background: #dc2626; color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 0.85rem; cursor: pointer; margin-bottom: 0.8rem; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25); display: flex; justify-content: center; align-items: center; gap: 6px; transition: background 0.2s;">
+        <span>💨</span> レバーを引く (噴射)
+      </button>
+      <div style="font-size:0.75rem; color:#57534e; margin-bottom:0.3rem;">残り放射時間: <span id="hud-agent-val">60.0</span>秒
+      </div>
+      <div style="background:rgba(0,0,0,0.06); height:8px; border-radius:4px; overflow:hidden;">
+        <div id="hud-agent-bar" style="background:#ff3333; width:100%; height:100%; transition: width 0.1s linear;">
+        </div>
+      </div>
+    </div>
+
+    <!-- クリア画面 -->
+    <div id="clear-screen" class="glass-panel hidden">
+      <h2 class="success-title">消火成功！</h2>
+      <p>迅速な消火活動により、被害を最小限に抑えることができました。</p>
+      <div class="stats">
+        <div
+          style="font-size: 1.15rem; font-weight: 800; margin-bottom: 1rem; color: #b45309; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          評価ランク: <span id="clear-rank"
+            style="color: #ffffff; padding: 2px 10px; border-radius: 6px; background: #d97706; font-size: 1.25rem;">S</span>
+        </div>
+        <div>消火所要時間: <span id="extinguish-time">0</span> 秒</div>
+        <div>消火剤放射時間: <span id="agent-used">0.0</span> 秒</div>
+      </div>
+      <button id="restart-btn" class="glow-button">もう一度体験する</button>
+    </div>
+
+    <!-- 失敗画面 -->
+    <div id="fail-screen" class="glass-panel hidden"
+      style="border: 2px solid rgba(220, 38, 38, 0.4); background: rgba(255, 245, 245, 0.94); box-shadow: 0 20px 40px rgba(220, 38, 38, 0.1);">
+      <h2 class="fail-title"
+        style="color: #dc2626; font-size: 2.2rem; font-weight: 900; border-bottom: 2px solid rgba(220,38,38,0.2); padding-bottom: 0.6rem; margin-bottom: 0.8rem;">
+        消火失敗！</h2>
+      <p id="fail-reason"
+        style="font-weight: 500; font-size: 0.95rem; margin-bottom: 1.5rem; color: #7f1d1d; line-height: 1.5;">
+        火災が拡大したか、消火剤が尽きてしまいました。</p>
+      <button id="retry-btn" class="glow-button"
+        style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 8px 20px rgba(220, 38, 38, 0.3);">もう一度挑戦する</button>
+    </div>
+  </div>
+
+  <!-- A-Frame VR Scene -->
+  <a-scene embedded webxr="referenceSpaceType: local-floor" loading-screen="enabled: false"
+    renderer="colorManagement: true; antialias: true;">
+
+    <!-- アセット管理 -->
+    <a-assets>
+      <!-- サウンドやテクスチャの登録が可能 -->
+      <!-- ここでは、プログラムで生成するかCDNを使用 -->
+      <!-- ローカルに音声ファイルやテクスチャがないため、ビルトインのシェーダー・要素で作成 -->
+    </a-assets>
+
+    <!-- カメラ & プレイヤープラグイン -->
+    <a-entity id="rig" position="0 0 2">
+      <a-entity id="camera" camera look-controls wasd-controls="acceleration: 20">
+        <!-- 画面中央のカーソル（PC操作用） -->
+        <a-cursor id="cursor"
+          animation__click="property: scale; startEvents: click; easing: easeInCubic; dur: 150; from: 0.1 0.1 0.1; to: 1 1 1"
+          animation__fusing="property: scale; startEvents: fusing; easing: easeInCubic; dur: 1500; from: 1 1 1; to: 0.1 0.1 0.1"
+          event-set__mouseenter="_event: mouseenter; color: #ff0055"
+          event-set__mouseleave="_event: mouseleave; color: black" raycaster="objects: .clickable"
+          material="color: #ffffff; shader: flat; opacity: 0.8"
+          geometry="primitive: ring; radiusInner: 0.005; radiusOuter: 0.01">
+        </a-cursor>
+      </a-entity>
+
+      <!-- VR コントローラー -->
+      <a-entity id="left-hand" laser-controls="hand: left" raycaster="objects: .clickable; far: 4"></a-entity>
+      <a-entity id="right-hand" laser-controls="hand: right" raycaster="objects: .clickable; far: 4">
+        <!-- VR装備用消火器 (VRモード時のみアタッチされ、カメラめり込みを100%回避) -->
+        <a-entity id="extinguisher-vr" position="0 -0.05 -0.2" rotation="-45 0 0" scale="0.4 0.4 0.4" visible="false">
+          <!-- ボンベ本体 -->
+          <a-cylinder id="ext-body-vr" position="0 0.25 0" radius="0.08" height="0.4" color="#d32f2f"
+            material="metalness: 0.5; roughness: 0.2">
+            <!-- ラベル -->
+            <a-cylinder position="0 0.03 0.005" radius="0.082" height="0.18" color="#ffffff" theta-length="180"
+              rotation="0 90 0" material="roughness: 0.5"></a-cylinder>
+          </a-cylinder>
+          <!-- レバー・ノズル部 -->
+          <a-entity position="0 0.48 0">
+            <!-- キャップ -->
+            <a-cylinder radius="0.05" height="0.06" color="#333333"></a-cylinder>
+            <!-- レバー -->
+            <a-box id="ext-lever-vr" position="0 0.05 -0.05" scale="0.03 0.02 0.12" color="#666666"
+              rotation="-15 0 0"></a-box>
+            <a-box position="0 0.01 -0.05" scale="0.03 0.02 0.1" color="#333333"></a-box>
+            <!-- ゲージ -->
+            <a-cylinder position="0.04 0.03 0.02" rotation="0 0 -90" radius="0.02" height="0.02" color="#cccccc">
+              <a-plane position="0 0 0.011" width="0.03" height="0.03" color="#4caf50"></a-plane>
+            </a-cylinder>
+            <!-- ホース & ノズル -->
+            <a-entity id="nozzle-arm-vr" position="0 0.02 0.05" rotation="20 0 0">
+              <a-cylinder id="hose-vr" position="0 -0.08 0.08" rotation="-50 0 0" radius="0.01" height="0.2"
+                color="#222222"></a-cylinder>
+              <a-cone id="nozzle-vr" position="0 -0.15 0.15" rotation="-70 0 0" radius-bottom="0.02" radius-top="0.005"
+                height="0.08" color="#222222"></a-cone>
+              <!-- 消火剤噴射の起点 (ノズルの先) -->
+              <a-entity id="spray-origin-vr" position="0 -0.19 0.19" rotation="-70 0 0"></a-entity>
+            </a-entity>
+          </a-entity>
+        </a-entity>
+      </a-entity>
+    </a-entity>
+
+    <!-- 青空の背景 (暗い黒い無限空間を排除) -->
+    <a-sky color="#dbf0ff"></a-sky>
+
+    <!-- ステージ環境 (明るいインテリアデザインの部屋) -->
+    <!-- 床 (ウッドベージュオーク調) -->
+    <a-plane position="0 0 0" rotation="-90 0 0" width="8" height="8" color="#dfd8c9"
+      material="roughness: 0.7; metalness: 0.15"></a-plane>
+    <!-- 壁 (明るいオフホワイト) -->
+    <a-plane position="0 2 -4" rotation="0 0 0" width="8" height="4" color="#f8f6f2"
+      material="roughness: 0.9"></a-plane> <!-- 奥 -->
+    <a-plane position="0 2 4" rotation="180 0 0" width="8" height="4" color="#f8f6f2"
+      material="roughness: 0.9"></a-plane> <!-- 手前 -->
+    <a-plane position="-4 2 0" rotation="0 90 0" width="8" height="4" color="#faf9f7"
+      material="roughness: 0.9"></a-plane> <!-- 左 -->
+    <a-plane position="4 2 0" rotation="0 -90 0" width="8" height="4" color="#faf9f7"
+      material="roughness: 0.9"></a-plane> <!-- 右 -->
+    <!-- 天井 -->
+    <a-plane position="0 4 0" rotation="90 0 0" width="8" height="8" color="#ffffff"
+      material="roughness: 1.0"></a-plane>
+
+    <!-- 明るい照明システム -->
+    <a-entity light="type: ambient; color: #b5b5b5"></a-entity>
+    <a-entity id="room-light" light="type: point; intensity: 1.2; distance: 12; decay: 1.2; castShadow: true"
+      position="0 3.5 0"></a-entity>
+    <!-- ストーブのヒーターの光 (出火時に強くなる) -->
+    <a-entity id="heater-light" light="type: point; color: #ff3300; intensity: 0.1; distance: 3"
+      position="0 0.3 -1.8"></a-entity>
+
+    <!-- ================= 3Dオブジェクト群 ================= -->
+
+    <!-- 洗濯物干し & タオル (ストーブの上付近) -->
+    <!-- 物干しラック -->
+    <a-entity id="clothes-hanger" position="0 0 -1.8">
+      <!-- 支柱左 -->
+      <a-cylinder position="-0.8 1 0" radius="0.015" height="2" color="#cccccc"
+        material="metalness: 0.8; roughness: 0.2"></a-cylinder>
+      <!-- 支柱右 -->
+      <a-cylinder position="0.8 1 0" radius="0.015" height="2" color="#cccccc"
+        material="metalness: 0.8; roughness: 0.2"></a-cylinder>
+      <!-- 横棒 -->
+      <a-cylinder position="0 1.95 0" rotation="0 0 90" radius="0.012" height="1.8" color="#cccccc"
+        material="metalness: 0.8; roughness: 0.2"></a-cylinder>
+
+      <!-- タオル (最初はハンガーに掛かっている) -->
+      <!-- タオル本体。後でアニメーションさせて落とす -->
+      <a-entity id="towel-wrapper" position="0 1.9 0">
+        <a-box id="towel" position="0 -0.25 0" scale="0.4 0.5 0.02" color="#ffffff"
+          material="roughness: 1.0; src: url(https://cdn.jsdelivr.net/gh/mrdoob/three.js@dev/examples/textures/roughness_map.jpg); repeat: 4 4"
+          class="clickable">
+        </a-box>
+      </a-entity>
+    </a-entity>
+
+    <!-- 電気ストーブ (タオルの真下近辺に配置) -->
+    <!-- タオルが落ちるとちょうど当たる物理的な位置 -->
+    <a-entity id="heater" position="0 0 -1.8">
+      <!-- ストーブ本体 -->
+      <a-box position="0 0.25 0" scale="0.5 0.5 0.2" color="#e0dacb" material="roughness: 0.7">
+        <!-- 反射板（ヒーターの奥） -->
+        <a-box position="0 0 0.08" scale="0.43 0.38 0.05" color="#555555" material="metalness: 0.9; roughness: 0.1">
+          <!-- 発熱体（カーボンヒーター） -->
+          <a-cylinder id="heater-element" position="0 0 0.03" rotation="90 0 0" radius="0.015" height="0.32"
+            color="#330000" material="emissive: #ff2200; emissiveIntensity: 0.1; roughness: 0.5"></a-cylinder>
+        </a-box>
+        <!-- 保護ネット -->
+        <a-box position="0 0 0.105" scale="0.45 0.4 0.005" color="#222222" material="wireframe: true"></a-box>
+        <!-- 脚部 -->
+        <a-box position="-0.2 -0.26 0" scale="0.1 0.02 0.25" color="#444444"></a-box>
+        <a-box position="0.2 -0.26 0" scale="0.1 0.02 0.25" color="#444444"></a-box>
+      </a-box>
+    </a-entity>
+
+    <!-- 火のベース位置 (タオルの落下先。出火時ここで炎パーティクルを発生させる) -->
+    <a-entity id="fire-source" position="0 0.45 -1.8" fire-system="intensity: 0; active: false"></a-entity>
+
+    <!-- 消火器 (ストーブのすぐ右隣に配置、クリックで装備) -->
+    <a-entity id="extinguisher" class="clickable" position="0.6 0.1 -1.4" rotation="0 -35 0" extinguisher-component>
+      <!-- 3D浮遊ガイド (装備前のみ表示) -->
+      <a-entity id="ext-guide" position="0 0.6 0">
+        <a-text value="CO2 EXTINGUISHER\n[ CLICK TO EQUIP ]" align="center" color="#4caf50" scale="0.32 0.32 0.32"
+          side="double" font="mozillavr"></a-text>
+        <a-cone position="0 -0.2 0" rotation="180 0 0" radius-bottom="0.035" radius-top="0" height="0.08"
+          color="#4caf50"
+          animation="property: position; to: 0 -0.26 0; dir: alternate; dur: 800; loop: true; easing: easeInOutQuad"></a-cone>
+      </a-entity>
+      <!-- ボンベ本体 -->
+      <a-cylinder id="ext-body" position="0 0.25 0" radius="0.08" height="0.4" color="#d32f2f"
+        material="metalness: 0.5; roughness: 0.2">
+        <!-- ラベル -->
+        <a-cylinder position="0 0.03 0.005" radius="0.082" height="0.18" color="#ffffff" theta-length="180"
+          rotation="0 90 0" material="roughness: 0.5"></a-cylinder>
+      </a-cylinder>
+      <!-- レバー・ノズル部 -->
+      <a-entity position="0 0.48 0">
+        <!-- キャップ -->
+        <a-cylinder radius="0.05" height="0.06" color="#333333"></a-cylinder>
+        <!-- レバー -->
+        <a-box id="ext-lever" position="0 0.05 -0.05" scale="0.03 0.02 0.12" color="#666666" rotation="-15 0 0"></a-box>
+        <a-box position="0 0.01 -0.05" scale="0.03 0.02 0.1" color="#333333"></a-box>
+        <!-- ゲージ -->
+        <a-cylinder position="0.04 0.03 0.02" rotation="0 0 -90" radius="0.02" height="0.02" color="#cccccc">
+          <a-plane position="0 0 0.011" width="0.03" height="0.03" color="#4caf50"></a-plane>
+        </a-cylinder>
+        <!-- ホース & ノズル -->
+        <a-entity id="nozzle-arm" position="0 0.02 0.05" rotation="20 0 0">
+          <a-cylinder id="hose" position="0 -0.08 0.08" rotation="-50 0 0" radius="0.01" height="0.2"
+            color="#222222"></a-cylinder>
+          <a-cone id="nozzle" position="0 -0.15 0.15" rotation="-70 0 0" radius-bottom="0.02" radius-top="0.005"
+            height="0.08" color="#222222"></a-cone>
+          <!-- 消火剤噴射の起点 (ノズルの先) -->
+          <a-entity id="spray-origin" position="0 -0.19 0.19" rotation="-70 0 0"></a-entity>
+        </a-entity>
+      </a-entity>
+    </a-entity>
+
+  </a-scene>
+
+  <!-- JSロジック -->
+  <script src="app.js"></script>
+</body>
+
+</html>

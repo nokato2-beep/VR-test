@@ -1051,6 +1051,11 @@ class FireSimulationApp {
       clearInterval(this.fireGrowInterval);
     }
 
+    // 消火器の噴射と音を即座に停止（アニメーションとカウントの停止）
+    const extEl = document.querySelector('#extinguisher');
+    if (extEl && extEl.components['extinguisher-component']) {
+      extEl.components['extinguisher-component'].stopSpraying();
+    }
     sounds.stopAll();
 
     // UI切替

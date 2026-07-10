@@ -808,8 +808,8 @@ class FireSimulationApp {
       this.dom.hudSprayBtn.style.background = '#dc2626';
     }
 
-    // スマホであればタッチ移動コントロールを表示する
-    if (AFRAME.utils.device.isMobile() && this.dom.mobileMovementCtrl) {
+    // 移動コントロールを表示する (PCデバッグ可能かつスマホ兼用)
+    if (this.dom.mobileMovementCtrl) {
       this.dom.mobileMovementCtrl.classList.remove('hidden');
     }
 
@@ -1073,7 +1073,6 @@ class FireSimulationApp {
     this.dom.extTimeTxt.innerText = timeSpent;
 
     // 消火器側から実際の噴射持続時間（秒数）を取得して表示
-    const extEl = document.querySelector('#extinguisher');
     let usedVal = 0.0;
     if (extEl && extEl.components['extinguisher-component']) {
       usedVal = extEl.components['extinguisher-component'].usedAgent;

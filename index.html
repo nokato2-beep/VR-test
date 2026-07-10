@@ -44,17 +44,24 @@
       <div id="instruction-hint"></div>
     </div>
 
-    <!-- モバイル用移動ボタン (スマホのみJSで表示をオンにする) -->
+    <!-- 移動ボタンコントロール（PC・スマホ兼用デザイン） -->
     <div id="mobile-movement-ctrl" class="glass-panel hidden"
-      style="position: absolute; bottom: 20px; left: 20px; z-index: 15; display: flex; gap: 12px; pointer-events: auto;">
-      <button id="move-forward-btn"
-        style="width: 58px; height: 58px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.7); background: rgba(255, 255, 255, 0.85); color: #1c1917; font-weight: 800; font-size: 0.75rem; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.06); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 1px; -webkit-user-select: none; user-select: none;">
-        <span style="font-size: 0.95rem;">▲</span>近づく
-      </button>
-      <button id="move-backward-btn"
-        style="width: 58px; height: 58px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.7); background: rgba(255, 255, 255, 0.85); color: #1c1917; font-weight: 800; font-size: 0.75rem; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.06); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 1px; -webkit-user-select: none; user-select: none;">
-        <span style="font-size: 0.95rem;">▼</span>離れる
-      </button>
+      style="position: absolute; bottom: 20px; left: 20px; z-index: 15; display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 20px; background: rgba(255, 255, 255, 0.78); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 10px 30px rgba(0,0,0,0.08); pointer-events: auto; align-items: center;">
+      <div
+        style="font-size: 0.65rem; font-weight: 800; color: #78716c; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">
+        移動コントロール</div>
+      <div style="display: flex; gap: 8px;">
+        <button id="move-forward-btn"
+          style="width: 58px; height: 58px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.8); background: linear-gradient(135deg, #ffffff 0%, #f4f4f5 100%); color: #1c1917; font-weight: 800; font-size: 0.75rem; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.08); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 1px; transition: transform 0.1s; -webkit-user-select: none; user-select: none;">
+          <span style="font-size: 1.0rem; color: #2563eb;">▲</span>近づく
+          <span style="font-size: 0.55rem; color: #a1a1aa; font-weight: 500;">(W)</span>
+        </button>
+        <button id="move-backward-btn"
+          style="width: 58px; height: 58px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.8); background: linear-gradient(135deg, #ffffff 0%, #f4f4f5 100%); color: #1c1917; font-weight: 800; font-size: 0.75rem; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.08); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 1px; transition: transform 0.1s; -webkit-user-select: none; user-select: none;">
+          <span style="font-size: 1.0rem; color: #4b5563;">▼</span>離れる
+          <span style="font-size: 0.55rem; color: #a1a1aa; font-weight: 500;">(S)</span>
+        </button>
+      </div>
     </div>
 
     <!-- PC用消火器装備2D HUD (初期は非表示, スタイリッシュなライトグラス表示) -->
